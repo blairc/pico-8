@@ -40,9 +40,9 @@ function move(start, min, max)
   d = flr(rnd(3)) - 1 -- -1, 0, or 1
 
   if      start - d < min then
-    return min
+    return min + abs(d)
   elseif  start + d > max then
-    return max
+    return max - d
   end
 
   return start + d
