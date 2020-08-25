@@ -4,19 +4,15 @@ __lua__
 -- pico-runner
 -- by blair
 
--- todo update everything to use https://www.lexaloffle.com/bbs/?pid=27696#p for collision detection!
-
--- todo drop/fall vs move
--- todo speed up over time
 -- todo harder enemies over time
--- todo increase enemy freq over time
 -- todo save high score + enemies defeated to cart
+-- todo increase enemy freq over time
 
 in_progress = 0
 gave_over = 1
+restart = 2
 
-is_collision = sqrt(128) -- todo is this right, or at least good enough?
-defeated_by = nil
+collided_with = nil
 
 left=0 right=1 up=2 down=3
 valid_moves = {left,right,up,down}
@@ -25,10 +21,12 @@ valid_moves = {left,right,up,down}
 function _init()
   state = in_progress
   speed = 0
-  score = 0 -- TODO rename
-  defeated = 0 -- TODO rename
+  time_played = 0
+  enemies_defeated = 0
+  score = 0
   
   player = {}
+  player.id = 'player'
   player.sprite = 1
   player.x = flr(rnd(120))
   player.y = flr(rnd(114)+8)
@@ -38,9 +36,7 @@ function _init()
   enemy_id = 0 -- FIXME FUCK
 end
 
-function _draw()
-	-- cls()
-	
+function _draw()	
 	if state == in_progress then	
 	  cls()
 	    
@@ -50,26 +46,26 @@ function _draw()
 		for enemy in all(enemies) do
 			spr(enemy.sprite, enemy.x, enemy.y)
 		end
-	
-	  print('time: ' .. flr(score), 0, 0, 6 )
-	  print('defeated: ' .. defeated, 0, 8, 6 )
-	  -- print('player: x=' .. player.x .. ',y=' .. player.y, 0, 16, 6)
-	  print('enemies: ' .. #enemies, 0, 112, 6 )
-	  print('speed: ' .. speed, 0, 120, 6)
-	  
-	  speed += 0.0001
-	elseif state == game_over then
-    print("\135 game over \135", 0, 16, 6)
-    print("your final score was: " .. flr(score), 0, 24, 6)
-    print("player coordinates: x=" .. player.x .. ", y=" .. player.y, 0, 80, 6)
-    print("enemy coordinates:  x=" .. defeated_by.x .. ", y=" .. defeated_by.y, 0, 88, 6)
-    print("distance: " .. distance(player, defeated_by), 0, 96, 6)
-    print("abs.x=" .. abs(player.x - defeated_by.x) .. ', abs.y=' .. abs(player.y - defeated_by.y), 0, 104, 6)
 
-    print("press x to try again")
+	  print('score: ' .. score, 0, 0, 6 )
+	  print(' time: ' .. flr(time_played), 0, 8, 6 )
+	  print(' defeated: ' .. enemies_defeated, 0, 16, 6 )
+	  -- print('enemies: ' .. #enemies, 0, 112, 6 )
+	  print('speed: ' .. speed .. ', enemies: ' .. #enemies, 0, 120, 6)
+	  
+	  speed += 0.0002 -- TODO ???
+	elseif state == game_over then
+    print("\135 game over \135", 0, 54, 6)
+    print("your final score was: " .. score, 0, 60, 6)
+    -- print("player coordinates: x=" .. player.x .. ", y=" .. player.y, 0, 96, 6)
+    -- print("enemy coordinates:  x=" .. collided_with.x .. ", y=" .. collided_with.y, 0, 104, 6)
+
+    print("press x to try again", 0, 66, 6)
     if btn(5) then 
-      _init() 
+      state = restart
     end
+  elseif state == restart then
+    _init()
 	end
 end
 
@@ -77,18 +73,17 @@ function _update()
 	if state == in_progress then
     move_player()
     move_enemies()
+    score = flr(time_played) + enemies_defeated
     check_game_over()
-    score += 1/30 -- TODO not happy about this
+    time_played += 1/30 -- TODO not happy about this
  end
 end
 
--- TODO DRY between check_for_collisions + check_game_over + distance
+-- https://www.lexaloffle.com/bbs/?pid=27696#p
 function check_for_collisions(object)
-  if not object.enemy_id then
-    return false
-  end
   for enemy in all(enemies) do
-    if distance(object, enemy) <= is_collision and object.enemy_id != enemy.enemy_id then
+    if abs(object.x - enemy.x) < 8 and abs(object.y - enemy.y) < 8 and object.id != enemy.id then
+      collided_with = enemy
       return true
     end
   end
@@ -96,22 +91,36 @@ function check_for_collisions(object)
 end
 
 function check_game_over()
-	for enemy in all(enemies) do
-	-- if abs(x1-x2)<8 and abs(y1-y2)<8 then POW
-	  -- https://www.lexaloffle.com/bbs/?pid=27696#p
-    if abs(player.x - enemy.x) < 8 and abs(player.y - enemy.y) < 8 then
-		-- if distance(player, enemy) <= is_collision then
-			state = game_over
-			defeated_by = enemy
-			break
-		end
+  if check_for_collisions(player) then
+		state = game_over
 	end
 end
 
-function distance(p0, p1)
-	dx = p0.x - p1.x
-	dy = p0.y - p1.y
-	return sqrt(dx*dx + dy*dy)
+-- TODO additional enemies & enemies
+function generate_enemies()
+  enemy = nil
+  
+  -- TODO more/better enemies
+  -- TODO use score in rnd calculation?
+  -- TODO faster enemies
+  -- TODO enemies that can appear anywhere?
+  
+  if score > 25 then
+	  if flr(rnd(200)) == 0 then
+	    enemy = generate_enemy_red()
+    end
+  end
+  
+	if not enemy and flr(rnd(100)) == 0 then
+	  enemy = generate_enemy_rock()
+	end
+	
+  -- ensure new enemy doens't collide with anything else
+  if enemy and not check_for_collisions(enemy) then
+    enemy.id = enemy_id -- uuid (effectively)
+		add(enemies, enemy)
+		enemy_id += 1 -- :scream_cat:
+	end
 end
 
 function generate_enemy_rock()
@@ -135,33 +144,13 @@ function generate_enemy_red()
   return enemy
 end
 
--- TODO additional enemies & enemies
-function generate_enemies()
-  enemy = nil
-  -- TODO r = flr(rnd(100))
-	if flr(rnd(100)) == 0 then
-	  enemy = generate_enemy_rock()
-	elseif flr(rnd(200)) == 0 then
-	  enemy = generate_enemy_red()
-  end
-  -- ensure no collisions
-  if enemy then
-    for other in all(enemies) do
-  	  if distance(enemy, other) < is_collision then
-  		  return
-  	  end
-    end
-    enemy.id = enemy_id -- uuid (effectively)
-		add(enemies, enemy)
-		enemy_id += 1
-	end
-end
-
 function move_enemies()
 	for enemy in all(enemies) do
+	  -- move if movable
 	  if enemy.movable then
 	    move_towards_player(enemy)
 	  end
+	  -- then drop
 		move_unit(enemy, down, speed)
 	end
 end
@@ -189,7 +178,6 @@ function move_player()
  end
 end
 
--- TODO should player speed up or just enemies?
 function move_unit(unit, direction, speed)  
   if direction == left then
     unit.x -= speed
@@ -228,7 +216,7 @@ function move_unit(unit, direction, speed)
         unit.y = 120 -- stop player
       else
         del(enemies, unit) -- delete enemy
-        defeated += 1
+        enemies_defeated += 1
       end
     end
   end
