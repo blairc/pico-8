@@ -4,8 +4,10 @@ __lua__
 -- pico-runner
 -- by blair
 
--- todo harder enemies over time
 -- todo save high score + enemies defeated to cart
+-- todo remove moving up as an option from moving towards player
+-- todo harder enemies over time
+-- todo invisible enemies?
 -- todo increase enemy freq over time
 
 in_progress = 0
@@ -24,24 +26,24 @@ function _init()
   time_played = 0
   enemies_defeated = 0
   score = 0
-  
+
   player = {}
   player.id = 'player'
   player.sprite = 1
   player.x = flr(rnd(120))
   player.y = flr(rnd(114)+8)
   player.speed = 1
-  
+
   enemies = {}
   enemy_id = 0 -- FIXME FUCK
 end
 
-function _draw()	
-	if state == in_progress then	
+function _draw()
+	if state == in_progress then
 	  cls()
-	    
+
 		generate_enemies()
-	
+
 		spr(player.sprite, player.x, player.y)
 		for enemy in all(enemies) do
 			spr(enemy.sprite, enemy.x, enemy.y)
@@ -52,7 +54,7 @@ function _draw()
 	  print(' defeated: ' .. enemies_defeated, 0, 16, 6 )
 	  -- print('enemies: ' .. #enemies, 0, 112, 6 )
 	  print('speed: ' .. speed .. ', enemies: ' .. #enemies, 0, 120, 6)
-	  
+
 	  speed += 0.0002 -- TODO ???
 	elseif state == game_over then
     print("\135 game over \135", 0, 54, 6)
@@ -61,7 +63,7 @@ function _draw()
     -- print("enemy coordinates:  x=" .. collided_with.x .. ", y=" .. collided_with.y, 0, 104, 6)
 
     print("press x to try again", 0, 66, 6)
-    if btn(5) then 
+    if btn(5) then
       state = restart
     end
   elseif state == restart then
@@ -99,22 +101,22 @@ end
 -- TODO additional enemies & enemies
 function generate_enemies()
   enemy = nil
-  
+
   -- TODO more/better enemies
   -- TODO use score in rnd calculation?
   -- TODO faster enemies
   -- TODO enemies that can appear anywhere?
-  
+
   if score > 25 then
 	  if flr(rnd(200)) == 0 then
 	    enemy = generate_enemy_red()
     end
   end
-  
+
 	if not enemy and flr(rnd(100)) == 0 then
 	  enemy = generate_enemy_rock()
 	end
-	
+
   -- ensure new enemy doens't collide with anything else
   if enemy and not check_for_collisions(enemy) then
     enemy.id = enemy_id -- uuid (effectively)
@@ -171,14 +173,14 @@ function move_towards_player(enemy)
 end
 
 function move_player()
- for i=1,#valid_moves do 
+ for i=1,#valid_moves do
   if btn(valid_moves[i]) then
    move_unit(player, valid_moves[i], player.speed)
   end
  end
 end
 
-function move_unit(unit, direction, speed)  
+function move_unit(unit, direction, speed)
   if direction == left then
     unit.x -= speed
     if check_for_collisions(unit) then
