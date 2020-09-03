@@ -4,11 +4,27 @@ __lua__
 -- pico-runner
 -- by blair
 
--- todo save high score + enemies defeated to cart
 -- todo remove moving up as an option from moving towards player
 -- todo harder enemies over time
 -- todo invisible enemies?
 -- todo increase enemy freq over time
+
+cartdata("pico_runner")
+cartdata_hi_score = 0
+cartdata_hi_time = 1
+cartdata_hi_defeated = 2
+
+function get_or_initialize_cartdata(cartdata_index)
+  v = dget(cartdata_index)
+  if nil == v then
+    v = 0
+    dset(cartdata_index, v)
+  end
+  return v
+end
+hi_score = get_or_initialize_cartdata(cartdata_hi_score)
+hi_time = get_or_initialize_cartdata(cartdata_hi_time)
+hi_defeated = get_or_initialize_cartdata(cartdata_hi_defeated)
 
 in_progress = 0
 gave_over = 1
@@ -18,7 +34,6 @@ collided_with = nil
 
 left=0 right=1 up=2 down=3
 valid_moves = {left,right,up,down}
-
 
 function _init()
   state = in_progress
@@ -49,20 +64,37 @@ function _draw()
 			spr(enemy.sprite, enemy.x, enemy.y)
 		end
 
-	  print('score: ' .. score, 0, 0, 6 )
-	  print(' time: ' .. flr(time_played), 0, 8, 6 )
-	  print(' defeated: ' .. enemies_defeated, 0, 16, 6 )
+	  print('score: ' .. score .. ' (' .. hi_score .. ')', 0, 0, 6 )
+	  print(' time: ' .. flr(time_played) .. ' (' .. hi_time .. ')', 0, 8, 6 )
+	  print(' defeated: ' .. enemies_defeated .. ' (' .. hi_defeated .. ')', 0, 16, 6 )
 	  -- print('enemies: ' .. #enemies, 0, 112, 6 )
 	  print('speed: ' .. speed .. ', enemies: ' .. #enemies, 0, 120, 6)
 
 	  speed += 0.0002 -- TODO ???
 	elseif state == game_over then
-    print("\135 game over \135", 0, 54, 6)
-    print("your final score was: " .. score, 0, 60, 6)
-    -- print("player coordinates: x=" .. player.x .. ", y=" .. player.y, 0, 96, 6)
-    -- print("enemy coordinates:  x=" .. collided_with.x .. ", y=" .. collided_with.y, 0, 104, 6)
+    print("\135 game over \135", 0, 56, 6)
+    print("your final score was: " .. score, 0, 64, 6)
+    last_y = 64
+    if score > hi_score then
+      hi_score = score
+      dset(cartdata_hi_score, hi_score)
+      last_y += 8
+      print("\135 new high score: " .. hi_score .. " \135", 0, 72, 6)
+    end
+    if time_played > hi_time then
+      hi_time = flr(time_played)
+      dset(cartdata_hi_time, hi_time)
+      last_y += 8
+      print("\135 new high time: " .. hi_time .. " \135", 0, 80, 6)
+    end
+    if enemies_defeated > hi_defeated then
+      hi_defeated = enemies_defeated
+      dset(cartdata_hi_defeated, hi_defeated)
+      last_y += 8
+      print("\135 new high defeated: " .. hi_defeated .. " \135", 0, 88, 6)
+    end
 
-    print("press x to try again", 0, 66, 6)
+    print("press x to try again", 0, 100, 6)
     if btn(5) then
       state = restart
     end
