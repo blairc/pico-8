@@ -4,10 +4,9 @@ __lua__
 -- pico-runner
 -- by blair
 
--- todo remove moving up as an option from moving towards player
--- todo harder enemies over time
--- todo invisible enemies?
--- todo increase enemy freq over time
+-- TODO harder enemies over time
+-- TODO invisible enemies?
+-- TODO increase enemy freq over time
 
 cartdata("pico_runner")
 cartdata_hi_score = 0
@@ -190,14 +189,12 @@ function move_enemies()
 end
 
 function move_towards_player(enemy)
+  -- don't allow moving up
   if enemy.x > player.x then
     move_unit(enemy, left, speed * enemy.speed)
   end
   if enemy.x < player.x then
     move_unit(enemy, right, speed * enemy.speed)
-  end
-  if enemy.y > player.y then
-    move_unit(enemy, up, speed * enemy.speed)
   end
   if enemy.y < player.y then
     move_unit(enemy, down, speed * enemy.speed)
