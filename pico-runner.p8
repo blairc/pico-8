@@ -4,8 +4,7 @@ __lua__
 -- pico-runner
 -- by blair
 
--- TODO harder enemies over time
--- TODO invisible enemies?
+-- TODO different score for different enemies?
 -- TODO increase enemy freq over time
 
 cartdata("pico_runner")
@@ -30,6 +29,7 @@ gave_over = 1
 restart = 2
 
 collided_with = nil
+enemy_generated_last_turn = false
 
 left=0 right=1 up=2 down=3
 valid_moves = {left,right,up,down}
@@ -56,11 +56,15 @@ function _draw()
 	if state == in_progress then
 	  cls()
 
-		generate_enemies()
+    generate_enemies()
 
 		spr(player.sprite, player.x, player.y)
 		for enemy in all(enemies) do
-			spr(enemy.sprite, enemy.x, enemy.y)
+      if "blue" == enemy.name and flr(time_played) % 2 == 0 then
+        spr(enemy.sprite + 1, enemy.x, enemy.y) -- invsible!
+      else
+        spr(enemy.sprite, enemy.x, enemy.y)
+      end
 		end
 
 	  print('score: ' .. score .. ' (' .. hi_score .. ')', 0, 0, 6 )
@@ -132,27 +136,31 @@ end
 -- TODO additional enemies & enemies
 function generate_enemies()
   enemy = nil
-
-  -- TODO more/better enemies
-  -- TODO use score in rnd calculation?
-  -- TODO faster enemies
-  -- TODO enemies that can appear anywhere?
-
-  if score > 25 then
-	  if flr(rnd(200)) == 0 then
-	    enemy = generate_enemy_red()
-    end
+  if enemy_generated_last_turn then
+    enemy_generated_last_turn = false
+    return enemy
   end
 
-	if not enemy and flr(rnd(100)) == 0 then
-	  enemy = generate_enemy_rock()
-	end
+  if     ( flr(rnd(3200)) - score ) == 0 then
+    enemy = generate_enemy_blue()
+  elseif ( flr(rnd(1600)) - score ) == 0 then
+    enemy = generate_enemy_green()
+  elseif ( flr(rnd(800)) - score ) == 0 then
+    enemy = generate_enemy_yellow()
+  elseif ( flr(rnd(400)) - score ) == 0 then
+    enemy = generate_enemy_orange()
+  elseif ( flr(rnd(200)) - score ) == 0 then
+    enemy = generate_enemy_red()
+  elseif ( flr(rnd(100)) - score ) == 0 then
+    enemy = generate_enemy_rock()
+  end
 
-  -- ensure new enemy doens't collide with anything else
+  -- ensure new enemy doesn't collide with anything else
   if enemy and not check_for_collisions(enemy) then
     enemy.id = enemy_id -- uuid (effectively)
 		add(enemies, enemy)
 		enemy_id += 1 -- :scream_cat:
+    enemy_generated_last_turn = true
 	end
 end
 
@@ -173,6 +181,50 @@ function generate_enemy_red()
   enemy.x = flr(rnd(120))
   enemy.y = 0
   enemy.speed = 1/2 -- 50% of speed
+  enemy.movable = true
+  return enemy
+end
+
+function generate_enemy_orange()
+  enemy = {}
+  enemy.name = 'orange'
+  enemy.sprite = 4
+  enemy.x = flr(rnd(120))
+  enemy.y = 0
+  enemy.speed = 1 -- 100% of speed
+  enemy.movable = true
+  return enemy
+end
+
+function generate_enemy_yellow()
+  enemy = {}
+  enemy.name = 'yellow'
+  enemy.sprite = 5
+  enemy.x = flr(rnd(120))
+  enemy.y = 0
+  enemy.speed = 6/4 -- 150% of speed
+  enemy.movable = true
+  return enemy
+end
+
+function generate_enemy_green()
+  enemy = {}
+  enemy.name = 'green'
+  enemy.sprite = 6
+  enemy.x = flr(rnd(120))
+  enemy.y = flr(rnd(60)) -- can appear anywhere in upper half of screen
+  enemy.speed = 6/4 -- 150% of speed
+  enemy.movable = true
+  return enemy
+end
+
+function generate_enemy_blue()
+  enemy = {}
+  enemy.name = 'blue'
+  enemy.sprite = 7
+  enemy.x = flr(rnd(120))
+  enemy.y = flr(rnd(90)) -- can appear almost anywhere
+  enemy.speed = 6/4 -- 150% of speed
   enemy.movable = true
   return enemy
 end
@@ -254,11 +306,11 @@ function move_unit(unit, direction, speed)
 end
 
 __gfx__
-00000000077777700444444008888880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000777777774444444488888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000077777700444444008888880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000077777700444444008888880099999900aaaaaa00bbbbbb00cccccc00000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+0000000077777777444444448888888899999999aaaaaaaabbbbbbbbcccccccc0000000000000000000000000000000000000000000000000000000000000000
+00000000077777700444444008888880099999900aaaaaa00bbbbbb00cccccc00000000000000000000000000000000000000000000000000000000000000000
