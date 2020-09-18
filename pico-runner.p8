@@ -4,8 +4,10 @@ __lua__
 -- pico-runner
 -- by blair
 
--- TODO different score for different enemies?
--- TODO increase enemy freq over time
+-- TODO simplify enemy generation?
+-- TODO simplify enemy movement?
+-- TODO more/better enemies?
+-- TODO limit number of enemies?
 
 cartdata("pico_runner")
 cartdata_hi_score = 0
@@ -49,7 +51,7 @@ function _init()
   player.speed = 1
 
   enemies = {}
-  enemy_id = 0 -- FIXME FUCK
+  enemy_id = 0 -- TODO a hack-ish uuid alternative
 end
 
 function _draw()
@@ -70,10 +72,9 @@ function _draw()
 	  print('score: ' .. score .. ' (' .. hi_score .. ')', 0, 0, 6 )
 	  print(' time: ' .. flr(time_played) .. ' (' .. hi_time .. ')', 0, 8, 6 )
 	  print(' defeated: ' .. enemies_defeated .. ' (' .. hi_defeated .. ')', 0, 16, 6 )
-	  -- print('enemies: ' .. #enemies, 0, 112, 6 )
 	  print('speed: ' .. speed .. ', enemies: ' .. #enemies, 0, 120, 6)
 
-	  speed += 0.0002 -- TODO ???
+	  speed += 0.0002 -- slowly speed things up
 	elseif state == game_over then
     print("\135 game over \135", 0, 56, 6)
     print("your final score was: " .. score, 0, 64, 6)
@@ -141,6 +142,7 @@ function generate_enemies()
     return enemy
   end
 
+  -- ugly but it works (enough)
   if     ( flr(rnd(3200)) - score ) == 0 then
     enemy = generate_enemy_blue()
   elseif ( flr(rnd(1600)) - score ) == 0 then
